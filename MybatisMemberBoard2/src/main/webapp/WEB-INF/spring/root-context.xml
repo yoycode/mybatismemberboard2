@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:mybatis-spring="http://mybatis.org/schema/mybatis-spring"
+	xsi:schemaLocation="http://mybatis.org/schema/mybatis-spring 
+		http://mybatis.org/schema/mybatis-spring-1.2.xsd
+		http://www.springframework.org/schema/beans 
+		https://www.springframework.org/schema/beans/spring-beans.xsd">
+	
+	<!-- Root Context: defines shared resources visible to all other web components -->
+	<bean id="dataSource" class="org.springframework.jdbc.datasource.SimpleDriverDataSource">
+		<property name="driverClass" value="oracle.jdbc.OracleDriver" /> 
+		<property name="url" value="jdbc:oracle:thin:@localhost:1521:orcl" />
+		<property name="username" value="scott" />
+		<property name="password" value="123456" />
+	</bean>
+	
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+	    <property name="dataSource" ref="dataSource"/>
+	    <!-- name="typeAliasesPackage"
+	    	 mybatis에서 resultType과 parameterType 사용시 bean 객체를 사용할려면 패키지 경로 및 bean 클래스명까지 입력해야 한다. 
+	    	  하지만 alias 처리를 해주면 bean 클래스명만 입력하면 된다.
+	    -->
+	    <property name="typeAliasesPackage" value="com.spring.mybatismb2" />
+
+	    <!--  
+	    <property name="mapperLocations" 
+	    	value="classpath*:/com/spring/mapper/MemberMapper.xml"></property>
+	    -->
+	    <!-- mapper관련 xml문서(ex:MemberMapper.xml)의 위치 지정 -->
+	    <property name="mapperLocations" 
+	    	value="classpath*:/com/spring/mapper/**/*.xml"></property>
+	    
+	</bean>
+	
+	<bean id="sqlSessionTemplate" class="org.mybatis.spring.SqlSessionTemplate">
+    	<constructor-arg ref="sqlSessionFactory"/>
+	</bean>		
+	
+	<!-- mybatis mapper 설정 관련(사용시 Namespace 탭에서 mybatis-spring추가하기) -->
+	<!-- mapper 관련 인터페이스(ex:MamberMapper.java)를 찾기 위한 패키지 경로 설정함 -->
+	<mybatis-spring:scan base-package="com.spring.mapper" />
+	
+</beans>
+

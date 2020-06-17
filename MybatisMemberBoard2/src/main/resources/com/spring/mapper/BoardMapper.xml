@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+	 PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- namespace="com.spring.mapper.BoardMapper는 
+	 BoardMapper인퍼페이스(BoardMapper.class)의 이름을 사용한다. -->
+<!-- root-context에서 아래와 같이 typeAliasesPackage를 설정하면 패키지 경로 생략 가능. -->
+<mapper namespace="com.spring.mapper.BoardMapper">
+
+	<resultMap type="BoardVO" id="boardResultMap">
+		<result property="num" column="num" />
+		<result property="id" column="id" />
+		<result property="subject" column="subject" />
+		<result property="content" column="content" />
+		<result property="org_file" column="org_file" />
+		<result property="up_file" column="up_file" />
+		<result property="re_ref" column="re_ref" />
+		<result property="re_lev" column="re_lev" />
+		<result property="re_seq" column="re_seq" />
+		<result property="readcount" column="readcount" />
+		<result property="boarddate" column="boarddate" />
+	</resultMap>
+
+	<!-- id는 Mapper.java(여기선 MemberMapper.java)에 동일하게 사용해야된다. -->  
+	<select id="getListCount" resultType="int">
+		select count(*) from smemberboard2
+	</select>
+	<!-- CDATA는 태그안에서는 전부 문자열로 치환 -->
+	<!-- <나 ( 와 같은 기호를 괄호인지 아니면 비교연산자 인지 확인이 안되고 특수문자 사용하는데 제한됨 -->
+	<select id="getBoardList" parameterType="HashMap" resultMap="boardResultMap">
+	 <!-- Hashmap에 {startrow}와 {endrow}가 저장되어있음 -->
+		<![CDATA[
+		select num,id,subject,content,org_file,up_file,re_ref,re_lev,re_seq,readcount,boarddate 
+        from (select rownum rnum,num,id,subject,content,org_file,up_file,re_ref,re_lev,re_seq,readcount,boarddate 
+              from (select * from smemberboard2 order by re_ref desc,re_seq asc)) 
+        where rnum>=#{startrow} and rnum<=#{endrow}
+     	]]>
+	</select>
+	
+	<select id="getDetail" parameterType="int" resultMap="boardResultMap">
+		select * from smemberboard2 where num = #{num}
+	</select>
+  
+  	<!-- ver 1 -->
+	<insert id="boardInsert" parameterType="BoardVO">
+		<!-- <selectKey>는 insert구문에만 사용 가능 -->
+		<!-- order값은 "BEFORE|AFTER" 대문자 사용할것 -->
+		<!-- keyProperty="num"에서 num은 컬럼 명이다. -->
+		<selectKey keyProperty="num" order="BEFORE" resultType="int">
+			select nvl(max(num), 0)+1 from smemberboard2
+		</selectKey>
+		insert into smemberboard2 values (#{num},#{id},#{subject},#{content},#{org_file},#{up_file},
+			#{num},#{re_lev},#{re_seq},#{readcount},sysdate)
+	</insert>
+
+	<!-- ver 2 -->
+	<!-- if test="num==''">에서 num==''는 num 이 null인지 검사 -->
+	<!--  
+	<insert id="boardInsert" parameterType="BoardVO">
+		<if test="num==''">
+			insert into smemberboard2 values (1,#{id},#{subject},#{content},#{org_file},#{up_file},
+			#{re_ref},#{re_lev},#{re_seq},#{readcount},sysdate)
+		</if>
+		<if test="num!=''">
+			insert into smemberboard2 values ((select max(num)+1 as num from smemberboard2)
+				,#{id},#{subject},#{content},#{org_file},#{up_file}
+				,#{re_ref},#{re_lev},#{re_seq},#{readcount},sysdate)
+		</if>
+	</insert>
+	-->
+	
+	<!--  ver3 -->
+	<!-- 
+	<insert id="boardInsert" parameterType="BoardVO">
+		<selectKey keyProperty="num" order="BEFORE" resultType="int">
+			<if test="num==''">select 1 from dual</if>
+			<if test="num!=''">select max(num)+1 from smemberboard2</if>
+		</selectKey>
+		insert into smemberboard2 values (#{num},#{id},#{subject},#{content},#{org_file},#{up_file},
+			#{re_ref},#{re_lev},#{re_seq},#{readcount},sysdate)
+	</insert>
+	-->
+	
+	<update id="boardReplyupdate" parameterType="BoardVO">
+		update smemberboard2 set re_seq=re_seq+1 
+		where re_ref = #{re_ref} and re_seq > #{re_seq}
+	</update>
+	
+	<insert id="boardReply" parameterType="BoardVO">
+		<!-- <selectKey>는 insert구문에만 사용 가능 -->
+		<!-- order값은 "BEFORE|AFTER" 대문자 사용할것 -->
+		<!-- keyProperty="num"에서 num은 컬럼 명이다. -->
+		<selectKey keyProperty="num" order="BEFORE" resultType="int">
+			select nvl(max(num), 0)+1 from smemberboard2
+		</selectKey>
+		insert into smemberboard2(num,id,subject,content,re_ref,re_lev,re_seq,readcount,boarddate) 
+		values (#{num},#{id},#{subject},#{content},#{re_ref},#{re_lev},#{re_seq},#{readcount},sysdate)
+	</insert>
+
+	<update id="boardModify" parameterType="BoardVO">
+		update smemberboard2 set subject=#{subject},content=#{content} where num=#{num}
+	</update>
+	
+	<delete id="boardDelete" parameterType="int">
+		delete from smemberboard2 where num=#{num}
+	</delete>
+	
+	<update id="setReadCountUpdate" parameterType="int">
+		update smemberboard2 set readcount=readcount+1 where num=#{num}
+	</update>
+	
+	<select id="isBoardWriter" parameterType="HashMap" resultType="int">
+		select count(*) from smemberboard2 where num=#{num} and id=#{id}
+	</select>
+
+</mapper>
